@@ -34,8 +34,8 @@ class TaskController extends Controller
     {
         try {
             $user = Auth::user();
-            $tasks = User::query()->where('id', $user->id)->with('tasks')->get();
-            return  UserResource::collection($tasks);
+            $tasks = User::query()->where('id', $user->id)->with('tasks')->first();
+            return  UserResource::make($tasks);
         }catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
