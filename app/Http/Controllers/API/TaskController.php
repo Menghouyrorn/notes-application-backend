@@ -9,6 +9,7 @@ use App\Models\TaskModel;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class TaskController extends Controller
 {
@@ -16,27 +17,42 @@ class TaskController extends Controller
     {
         try {
             $perPage = $request->query('per_page', 15);
-            $title= $request->query('title');
+            $title = $request->query('title');
 
-            $task= TaskModel::query()
+            $task = TaskModel::query()
                 ->when($title, fn($query) => $query->where('title', 'like', "%{$title}%"))
                 ->paginate($perPage);
 
-            return  TaskResource::collection($task);
-        }catch (\Exception $e) {
+            return TaskResource::collection($task);
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
             ], 500);
         }
     }
 
-    public function getTaskByUser()
+    public function getTaskByUser(Request $request)
     {
         try {
             $user = Auth::user();
-            $tasks = User::query()->where('id', $user->id)->with('tasks')->first();
-            return  UserResource::make($tasks);
-        }catch (\Exception $e) {
+            $title = $request->query('title');
+            $find_today = filter_var($request->query('find_today', false));
+            $find_week = filter_var($request->query('find_week', false));
+            $tasks = User::query()->where('id', $user->id)->
+            with(['tasks' => function ($q) use ($find_today, $find_week, $title,) {
+                $q->orderBy('title', 'asc');
+                if ($title) {
+                    $q->where(DB::raw('UPPER(title)'), 'like', '%' . strtoupper($title) . '%');
+                }
+                if ($find_today) {
+                    $q->whereDate('created_at', now()->toDateString());
+                }
+                if ($find_week) {
+                    $q->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
+                }
+            }])->first();
+            return UserResource::make($tasks);
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
             ], 500);
@@ -48,7 +64,7 @@ class TaskController extends Controller
         try {
             $task = TaskModel::findOrFail($id);
             return TaskResource::make($task);
-        }catch (\Exception $e) {
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
             ], 500);
@@ -63,18 +79,19 @@ class TaskController extends Controller
                 'description' => 'nullable|string',
             ]);
 
-            $task= TaskModel::create([
+            $task = TaskModel::create([
                 'title' => $data['title'],
                 'description' => $data['description'],
                 "user_id" => Auth::id(),
             ]);
-            return  TaskResource::make($task);
-        }catch (\Exception $e) {
+            return TaskResource::make($task);
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
             ], 500);
         }
     }
+
     public function update(Request $request, $id)
     {
         try {
@@ -88,7 +105,7 @@ class TaskController extends Controller
             $task->update($data);
 
             return TaskResource::make($task);
-        }catch (\Exception $e) {
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
             ], 500);
@@ -103,7 +120,7 @@ class TaskController extends Controller
             return response()->json([
                 'message' => 'Task deleted successfully'
             ]);
-        }catch (\Exception $e) {
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
             ], 500);
