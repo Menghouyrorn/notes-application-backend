@@ -40,7 +40,7 @@ class TaskController extends Controller
             $find_week = filter_var($request->query('find_week', false));
             $tasks = User::query()->where('id', $user->id)->
             with(['tasks' => function ($q) use ($find_today, $find_week, $title,) {
-                $q->orderBy('title', 'asc');
+                $q->orderBy('created_at', 'desc');
                 if ($title) {
                     $q->where(DB::raw('UPPER(title)'), 'like', '%' . strtoupper($title) . '%');
                 }
