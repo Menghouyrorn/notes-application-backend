@@ -51,4 +51,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(TaskModel::class, 'user_id', 'id');
     }
+
+    public function roles()
+    {
+        return $this->belongsTo(RoleModel::class, "role_id");
+    }
+
+    public function permissions()
+    {
+        return $this->belongsToMany(PermissionsModel::class,'permissions_user','user_id','permission_id');
+    }
 }

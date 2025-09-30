@@ -57,6 +57,7 @@ class AuthController extends Controller
     {
         try {
             $user = Auth::user();
+            $user->load('roles','permissions');
 
             if (!$user) {
                 return response()->json(['error' => 'User not authenticated'], 401);

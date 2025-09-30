@@ -23,6 +23,14 @@ class UserResource extends JsonResource
                     return new TaskResource($value);
                 });
             }),
+            'roles'=>$this->whenLoaded('roles',function (){
+                return new RoleResource($this->roles);
+            }),
+            'permissions'=>$this->whenLoaded('permissions',function (){
+                return collect($this->permissions)->map(function ($value){
+                    return new PermissionsResource($value);
+                });
+            }),
             'created_at' => new DateResource($this->created_at),
             'updated_at' => new DateResource($this->updated_at),
         ];
